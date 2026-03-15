@@ -38,8 +38,12 @@ const authSlice = createSlice({
       state.refresh = null;
       state.isAuthenticated = false;
     },
-    clearError: (state) => {
-      state.error = null;
+    // Обновление данных текущего пользователя (например, после изменения профиля)
+    updateUser: (state, action) => {
+      state.user = {
+        ...(state.user || {}),
+        ...action.payload,
+      };
     },
   },
   extraReducers: (builder) => {
@@ -62,5 +66,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, updateUser } = authSlice.actions;
 export default authSlice.reducer;

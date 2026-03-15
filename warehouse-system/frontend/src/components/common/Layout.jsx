@@ -32,9 +32,7 @@ const Layout = () => {
         }}
       >
         <Toolbar />
-        <Box className="fade-in">
-          <Outlet />
-        </Box>
+        <Outlet />
       </Box>
     </Box>
   );

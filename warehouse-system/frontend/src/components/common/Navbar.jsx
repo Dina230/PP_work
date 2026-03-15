@@ -13,19 +13,21 @@ import {
   Box,
   InputBase,
   alpha,
+  Tooltip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Notifications as NotificationsIcon,
-  AccountCircle,
   Search as SearchIcon,
+  Logout,
+  Person,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { logout } from '../../store/slices/authSlice';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
-  borderRadius: theme.shape.borderRadius,
+  borderRadius: theme.shape.borderRadius * 2,
   backgroundColor: alpha(theme.palette.common.white, 0.15),
   '&:hover': {
     backgroundColor: alpha(theme.palette.common.white, 0.25),
@@ -36,6 +38,7 @@ const Search = styled('div')(({ theme }) => ({
   [theme.breakpoints.up('sm')]: {
     marginLeft: theme.spacing(3),
     width: 'auto',
+    minWidth: 300,
   },
 }));
 
@@ -47,18 +50,17 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  color: alpha('#fff', 0.7),
 }));
 
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
   color: 'inherit',
+  width: '100%',
   '& .MuiInputBase-input': {
     padding: theme.spacing(1, 1, 1, 0),
     paddingLeft: `calc(1em + ${theme.spacing(4)})`,
     transition: theme.transitions.create('width'),
     width: '100%',
-    [theme.breakpoints.up('md')]: {
-      width: '20ch',
-    },
   },
 }));
 
@@ -66,9 +68,8 @@ const Navbar = ({ handleDrawerToggle, drawerWidth }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { unreadCount } = useSelector((state) => state.notifications);
   const [anchorEl, setAnchorEl] = useState(null);
-  const [searchAnchorEl, setSearchAnchorEl] = useState(null);
+  const [searchValue, setSearchValue] = useState('');
 
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -78,14 +79,6 @@ const Navbar = ({ handleDrawerToggle, drawerWidth }) => {
     setAnchorEl(null);
   };
 
-  const handleSearchClick = (event) => {
-    setSearchAnchorEl(event.currentTarget);
-  };
-
-  const handleSearchClose = () => {
-    setSearchAnchorEl(null);
-  };
-
   const handleLogout = () => {
     dispatch(logout());
     navigate('/login');
@@ -93,7 +86,7 @@ const Navbar = ({ handleDrawerToggle, drawerWidth }) => {
 
   const getInitials = () => {
     if (!user) return 'U';
-    return `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}` || user.username[0].toUpperCase();
+    return user.username?.[0]?.toUpperCase() || 'U';
   };
 
   return (
@@ -102,13 +95,12 @@ const Navbar = ({ handleDrawerToggle, drawerWidth }) => {
       sx={{
         width: { sm: `calc(100% - ${drawerWidth}px)` },
         ml: { sm: `${drawerWidth}px` },
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
       }}
     >
       <Toolbar>
         <IconButton
           color="inherit"
-          aria-label="open drawer"
           edge="start"
           onClick={handleDrawerToggle}
           sx={{ mr: 2, display: { sm: 'none' } }}
@@ -116,68 +108,52 @@ const Navbar = ({ handleDrawerToggle, drawerWidth }) => {
           <MenuIcon />
         </IconButton>
 
-        <Typography
-          variant="h6"
-          noWrap
-          component="div"
-          sx={{ display: { xs: 'none', sm: 'block' } }}
-        >
+        <Typography variant="h6" noWrap sx={{ display: { xs: 'none', sm: 'block' } }}>
           Складской учёт
         </Typography>
 
-        <Search>
-          <SearchIconWrapper>
-            <SearchIcon />
-          </SearchIconWrapper>
-          <StyledInputBase
-            placeholder="Поиск..."
-            inputProps={{ 'aria-label': 'search' }}
-            onClick={handleSearchClick}
-          />
-        </Search>
-
-        <Box sx={{ flexGrow: 1 }} />
+        <Box component="form" sx={{ flexGrow: 1 }}>
+          <Search>
+            <SearchIconWrapper>
+              <SearchIcon />
+            </SearchIconWrapper>
+            <StyledInputBase
+              placeholder="Поиск..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+            />
+          </Search>
+        </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton color="inherit" onClick={() => navigate('/notifications')}>
-            <Badge badgeContent={unreadCount} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
-
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', md: 'block' } }}>
-              {user?.username}
-            </Typography>
-            <IconButton
-              size="large"
-              edge="end"
-              aria-label="account"
-              aria-haspopup="true"
-              onClick={handleProfileMenuOpen}
-              color="inherit"
-            >
-              {user?.avatar ? (
-                <Avatar src={user.avatar} sx={{ width: 35, height: 35 }} />
-              ) : (
-                <Avatar sx={{ width: 35, height: 35, bgcolor: 'secondary.main' }}>
-                  {getInitials()}
-                </Avatar>
-              )}
+          <Tooltip title="Уведомления">
+            <IconButton color="inherit">
+              <Badge badgeContent={0} color="error">
+                <NotificationsIcon />
+              </Badge>
             </IconButton>
-          </Box>
+          </Tooltip>
+
+          <Tooltip title="Профиль">
+            <IconButton onClick={handleProfileMenuOpen} color="inherit">
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+                {getInitials()}
+              </Avatar>
+            </IconButton>
+          </Tooltip>
         </Box>
 
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleMenuClose}
-          onClick={handleMenuClose}
         >
           <MenuItem onClick={() => { handleMenuClose(); navigate('/profile'); }}>
-            <AccountCircle sx={{ mr: 1 }} /> Профиль
+            <Person sx={{ mr: 1 }} /> Профиль
           </MenuItem>
-          <MenuItem onClick={handleLogout}>Выйти</MenuItem>
+          <MenuItem onClick={handleLogout}>
+            <Logout sx={{ mr: 1 }} /> Выйти
+          </MenuItem>
         </Menu>
       </Toolbar>
     </AppBar>

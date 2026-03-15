@@ -1,29 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import {
-  Box,
   Paper,
   Typography,
-  Grid,
   TextField,
   Button,
+  Grid,
+  Box,
   Avatar,
   Divider,
   Chip,
   CircularProgress,
   Alert,
+  Card,
+  CardContent,
 } from '@mui/material';
 import {
   Save as SaveIcon,
   Edit as EditIcon,
-  PhotoCamera as PhotoCameraIcon,
+  Person as PersonIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  Badge as BadgeIcon,
 } from '@mui/icons-material';
+import { useDispatch, useSelector } from 'react-redux';
+import api from '../../services/api';
 import { useNotification } from '../../hooks/useNotification';
-import authService from '../../services/authService';
+import { updateUser } from '../../store/slices/authSlice';
 
 const Profile = () => {
   const { user } = useSelector((state) => state.auth);
   const { showNotification } = useNotification();
+  const dispatch = useDispatch();
+
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
@@ -54,10 +62,14 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      await authService.updateProfile(formData);
+      const response = await api.put('/users/me/', formData);
       showNotification('Профиль успешно обновлен', 'success');
       setEditMode(false);
+
+      // Обновляем данные пользователя в Redux store
+      dispatch(updateUser(response.data));
     } catch (error) {
       showNotification('Ошибка при обновлении профиля', 'error');
     } finally {
@@ -83,6 +95,14 @@ const Profile = () => {
     return colors[role] || 'default';
   };
 
+  const getInitials = () => {
+    if (!user) return 'U';
+    if (user.first_name && user.last_name) {
+      return `${user.first_name[0]}${user.last_name[0]}`;
+    }
+    return user.username[0].toUpperCase();
+  };
+
   if (!user) {
     return <CircularProgress />;
   }
@@ -96,164 +116,188 @@ const Profile = () => {
       <Grid container spacing={3}>
         {/* Левая колонка - Аватар и основная информация */}
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, textAlign: 'center' }}>
-            <Box sx={{ position: 'relative', display: 'inline-block' }}>
-              <Avatar
-                sx={{
-                  width: 150,
-                  height: 150,
-                  mx: 'auto',
-                  mb: 2,
-                  bgcolor: 'primary.main',
-                  fontSize: '3rem',
-                }}
-              >
-                {user.username[0].toUpperCase()}
-              </Avatar>
-              {editMode && (
-                <Button
-                  variant="contained"
-                  component="label"
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
+                <Avatar
                   sx={{
-                    position: 'absolute',
-                    bottom: 10,
-                    right: 10,
-                    minWidth: 'auto',
-                    p: 1,
-                    borderRadius: '50%',
+                    width: 120,
+                    height: 120,
+                    mb: 2,
+                    bgcolor: 'primary.main',
+                    fontSize: '3rem',
                   }}
                 >
-                  <PhotoCameraIcon />
-                  <input type="file" hidden accept="image/*" />
-                </Button>
-              )}
-            </Box>
+                  {getInitials()}
+                </Avatar>
 
-            <Typography variant="h5" gutterBottom>
-              {user.username}
-            </Typography>
+                <Typography variant="h5" gutterBottom>
+                  {user.first_name || user.last_name
+                    ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                    : user.username}
+                </Typography>
 
-            <Chip
-              label={getRoleName(user.role)}
-              color={getRoleColor(user.role)}
-              sx={{ mb: 2 }}
-            />
+                <Chip
+                  label={getRoleName(user.role)}
+                  color={getRoleColor(user.role)}
+                  sx={{ mb: 2 }}
+                />
 
-            <Divider sx={{ my: 2 }} />
+                <Divider sx={{ width: '100%', my: 2 }} />
 
-            <Box sx={{ textAlign: 'left' }}>
-              <Typography variant="body2" color="textSecondary">
-                Дата регистрации
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                {new Date(user.date_joined).toLocaleDateString('ru-RU')}
-              </Typography>
+                <Box sx={{ width: '100%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <PersonIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Имя пользователя
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" sx={{ ml: 4, mb: 2 }}>
+                    {user.username}
+                  </Typography>
 
-              <Typography variant="body2" color="textSecondary">
-                Последний вход
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                {user.last_login ? new Date(user.last_login).toLocaleString('ru-RU') : 'Нет данных'}
-              </Typography>
-            </Box>
-          </Paper>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <EmailIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Email
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" sx={{ ml: 4, mb: 2 }}>
+                    {user.email || '—'}
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <BadgeIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Роль
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" sx={{ ml: 4, mb: 2 }}>
+                    {getRoleName(user.role)}
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <PhoneIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Телефон
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" sx={{ ml: 4 }}>
+                    {user.phone || '—'}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
 
-        {/* Правая колонка - Форма с данными */}
+        {/* Правая колонка - Форма редактирования */}
         <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h6">
-                Личные данные
-              </Typography>
-              {!editMode && (
-                <Button
-                  variant="outlined"
-                  startIcon={<EditIcon />}
-                  onClick={() => setEditMode(true)}
-                >
-                  Редактировать
-                </Button>
-              )}
-            </Box>
-
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Имя"
-                    name="first_name"
-                    value={formData.first_name}
-                    onChange={handleChange}
-                    disabled={!editMode || loading}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Фамилия"
-                    name="last_name"
-                    value={formData.last_name}
-                    onChange={handleChange}
-                    disabled={!editMode || loading}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    disabled={!editMode || loading}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Телефон"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    disabled={!editMode || loading}
-                    placeholder="+7 (999) 999-99-99"
-                  />
-                </Grid>
-
-                {editMode && (
-                  <Grid item xs={12}>
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                      <Button
-                        variant="outlined"
-                        onClick={() => {
-                          setEditMode(false);
-                          setFormData({
-                            first_name: user.first_name || '',
-                            last_name: user.last_name || '',
-                            email: user.email || '',
-                            phone: user.phone || '',
-                          });
-                        }}
-                        disabled={loading}
-                      >
-                        Отмена
-                      </Button>
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        startIcon={<SaveIcon />}
-                        disabled={loading}
-                      >
-                        {loading ? <CircularProgress size={24} /> : 'Сохранить'}
-                      </Button>
-                    </Box>
-                  </Grid>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h6">
+                  Редактирование профиля
+                </Typography>
+                {!editMode && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    onClick={() => setEditMode(true)}
+                  >
+                    Редактировать
+                  </Button>
                 )}
-              </Grid>
-            </form>
-          </Paper>
+              </Box>
+
+              <Divider sx={{ mb: 3 }} />
+
+              <form onSubmit={handleSubmit}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Имя"
+                      name="first_name"
+                      value={formData.first_name}
+                      onChange={handleChange}
+                      disabled={!editMode || loading}
+                      variant="outlined"
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Фамилия"
+                      name="last_name"
+                      value={formData.last_name}
+                      onChange={handleChange}
+                      disabled={!editMode || loading}
+                      variant="outlined"
+                    />
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      disabled={!editMode || loading}
+                      variant="outlined"
+                    />
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Телефон"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      disabled={!editMode || loading}
+                      variant="outlined"
+                      placeholder="+7 (999) 999-99-99"
+                    />
+                  </Grid>
+
+                  {editMode && (
+                    <Grid item xs={12}>
+                      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                        <Button
+                          variant="outlined"
+                          onClick={() => {
+                            setEditMode(false);
+                            // Сброс к исходным данным
+                            setFormData({
+                              first_name: user.first_name || '',
+                              last_name: user.last_name || '',
+                              email: user.email || '',
+                              phone: user.phone || '',
+                            });
+                          }}
+                          disabled={loading}
+                        >
+                          Отмена
+                        </Button>
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+                          disabled={loading}
+                        >
+                          {loading ? 'Сохранение...' : 'Сохранить'}
+                        </Button>
+                      </Box>
+                    </Grid>
+                  )}
+                </Grid>
+              </form>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
     </Box>

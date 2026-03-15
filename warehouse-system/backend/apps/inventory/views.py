@@ -3,9 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from .models import Inventory, InventoryItem
 from .serializers import InventorySerializer, InventoryItemSerializer
-from apps.warehouse.models import ProductBatch, Product, Warehouse
+from apps.warehouse.models import ProductBatch, Product, Warehouse, Status
 from apps.warehouse.serializers import ProductBatchSerializer
 
 
@@ -21,7 +22,20 @@ class InventoryViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        # Статус по умолчанию для инвентаризаций
+        status = Status.objects.filter(entity_type='inventory').order_by('sort_order').first()
+        if status is None:
+            status = Status.objects.create(
+                name='Новая',
+                code='inventory_new',
+                entity_type='inventory',
+                color='#0288d1',
+                sort_order=0,
+            )
+        serializer.save(
+            created_by=self.request.user,
+            status=status,
+        )
 
     @action(detail=True, methods=['post'])
     def start(self, request, pk=None):
@@ -54,6 +68,38 @@ class InventoryViewSet(viewsets.ModelViewSet):
             serializer.save(inventory=inventory)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def populate_from_stock(self, request, pk=None):
+        """
+        Автоматическое заполнение инвентаризации позициями по текущим остаткам склада.
+        Создаём по одной строке на каждую партию в этом складе, если такой строки ещё нет.
+        """
+        inventory = self.get_object()
+        # Все партии по складу инвентаризации
+        batches = ProductBatch.objects.filter(warehouse=inventory.warehouse)
+
+        # Уже добавленные позиции (чтобы не дублировать)
+        existing = set(
+            InventoryItem.objects.filter(inventory=inventory)
+            .values_list('product_id', 'batch_id')
+        )
+
+        created_count = 0
+        with transaction.atomic():
+            for batch in batches:
+                key = (batch.product_id, batch.id)
+                if key in existing:
+                    continue
+                InventoryItem.objects.create(
+                    inventory=inventory,
+                    product=batch.product,
+                    batch=batch,
+                    expected_quantity=batch.remaining_quantity,
+                )
+                created_count += 1
+
+        return Response({'created': created_count}, status=status.HTTP_201_CREATED)
 
 
 class InventoryItemViewSet(viewsets.ModelViewSet):

@@ -19,10 +19,27 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes = [permissions.IsAuthenticated]
         return [permission() for permission in permission_classes]
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'put', 'patch'])
     def me(self, request):
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+        """Получение и обновление текущего пользователя"""
+        user = request.user
+
+        if request.method == 'GET':
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+
+        # Разрешаем частичное обновление и для PUT, чтобы
+        # можно было отправлять только изменяемые поля профиля
+        elif request.method in ['PUT', 'PATCH']:
+            serializer = self.get_serializer(
+                user,
+                data=request.data,
+                partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RoleViewSet(viewsets.ModelViewSet):

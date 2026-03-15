@@ -19,6 +19,21 @@ class WarehouseSerializer(serializers.ModelSerializer):
 
 
 class SupplierSerializer(serializers.ModelSerializer):
+    # Делаем необязательные поля по умолчанию пустыми строками,
+    # чтобы не падать при их отсутствии в запросе
+    contact_person = serializers.CharField(
+        required=False, allow_blank=True, default=''
+    )
+    phone = serializers.CharField(
+        required=False, allow_blank=True, default=''
+    )
+    email = serializers.EmailField(
+        required=False, allow_blank=True, default=''
+    )
+    address = serializers.CharField(
+        required=False, allow_blank=True, default=''
+    )
+
     class Meta:
         model = Supplier
         fields = ['id', 'name', 'inn', 'contact_person', 'phone', 'email',
@@ -27,12 +42,18 @@ class SupplierSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
+    quantity = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        read_only=True,
+        help_text='Суммарный остаток по всем партиям товара',
+    )
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'sku', 'barcode', 'category', 'category_name',
                   'description', 'unit', 'min_stock', 'max_stock', 'is_active',
-                  'created_at', 'updated_at']
+                  'created_at', 'updated_at', 'quantity']
 
 
 class ProductBatchSerializer(serializers.ModelSerializer):
@@ -50,6 +71,11 @@ class ProductBatchSerializer(serializers.ModelSerializer):
                   'quantity', 'remaining_quantity', 'purchase_price', 'selling_price',
                   'production_date', 'expiration_date', 'status', 'status_name',
                   'created_at', 'created_by', 'created_by_name']
+        extra_kwargs = {
+            'status': {'read_only': True},
+            'created_by': {'read_only': True},
+            'remaining_quantity': {'required': False},
+        }
 
 
 class StockMovementSerializer(serializers.ModelSerializer):
@@ -66,6 +92,11 @@ class StockMovementSerializer(serializers.ModelSerializer):
                   'from_warehouse', 'from_warehouse_name', 'to_warehouse', 'to_warehouse_name',
                   'quantity', 'document_number', 'document_date', 'status', 'status_name',
                   'notes', 'created_at', 'created_by', 'created_by_name']
+        extra_kwargs = {
+            'status': {'read_only': True},
+            'created_by': {'read_only': True},
+            'document_date': {'required': False},
+        }
 
 
 class WriteOffSerializer(serializers.ModelSerializer):
@@ -81,3 +112,10 @@ class WriteOffSerializer(serializers.ModelSerializer):
                   'document_number', 'document_date', 'status', 'status_name',
                   'approved_by', 'approved_by_name', 'approved_at', 'created_at',
                   'created_by', 'created_by_name']
+        extra_kwargs = {
+            'status': {'read_only': True},
+            'created_by': {'read_only': True},
+            'approved_by': {'read_only': True},
+            'approved_at': {'read_only': True},
+            'document_date': {'required': False},
+        }

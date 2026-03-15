@@ -13,6 +13,10 @@ class InventoryItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'inventory', 'product', 'product_name', 'product_sku',
                   'batch', 'batch_number', 'expected_quantity', 'actual_quantity',
                   'difference', 'notes']
+        extra_kwargs = {
+            'inventory': {'read_only': True},
+            'notes': {'required': False, 'allow_blank': True},
+        }
 
 
 class InventorySerializer(serializers.ModelSerializer):
@@ -28,3 +32,10 @@ class InventorySerializer(serializers.ModelSerializer):
                   'start_date', 'end_date', 'status', 'status_name',
                   'created_by', 'created_by_name', 'conducted_by', 'conducted_by_name',
                   'notes', 'created_at', 'items']
+        extra_kwargs = {
+            'status': {'read_only': True},
+            'created_by': {'read_only': True},
+            'conducted_by': {'read_only': True},
+            'start_date': {'required': False},
+            'end_date': {'required': False},
+        }

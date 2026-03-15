@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import {
   Drawer,
   List,
@@ -13,6 +13,7 @@ import {
   Divider,
   Typography,
   Avatar,
+  Collapse,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -22,43 +23,61 @@ import {
   Assignment as InventoryIcon2,
   Delete as WriteOffIcon,
   Assessment as ReportsIcon,
-  AdminPanelSettings as AdminIcon,
   Notifications as NotificationsIcon,
   Category as CategoryIcon,
+  Warehouse as WarehouseIcon,
+  Business as SupplierIcon,
+  ExpandLess,
+  ExpandMore,
 } from '@mui/icons-material';
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
+  const [openMenus, setOpenMenus] = useState({});
+
+  const handleMenuClick = (menu) => {
+    setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
+  };
 
   const menuItems = [
-    { text: 'Дашборд', icon: <DashboardIcon />, path: '/dashboard', roles: ['admin', 'manager', 'user'] },
-    { text: 'Товары', icon: <InventoryIcon />, path: '/products', roles: ['admin', 'manager', 'user'] },
-    { text: 'Партии', icon: <BatchesIcon />, path: '/batches', roles: ['admin', 'manager', 'user'] },
-    { text: 'Движения', icon: <MovementsIcon />, path: '/movements', roles: ['admin', 'manager', 'user'] },
-    { text: 'Инвентаризация', icon: <InventoryIcon2 />, path: '/inventory', roles: ['admin', 'manager'] },
-    { text: 'Списания', icon: <WriteOffIcon />, path: '/writeoffs', roles: ['admin', 'manager'] },
-    { text: 'Отчёты', icon: <ReportsIcon />, path: '/reports', roles: ['admin', 'manager'] },
-    { text: 'Уведомления', icon: <NotificationsIcon />, path: '/notifications', roles: ['admin', 'manager', 'user'] },
-    { text: 'Категории', icon: <CategoryIcon />, path: '/categories', roles: ['admin'] },
-    { text: 'Администрирование', icon: <AdminIcon />, path: '/admin', roles: ['admin'] },
+    { text: 'Дашборд', icon: <DashboardIcon />, path: '/dashboard' },
+    {
+      text: 'Склад',
+      icon: <InventoryIcon />,
+      submenu: [
+        { text: 'Товары', path: '/products', icon: <InventoryIcon /> },
+        { text: 'Категории', path: '/categories', icon: <CategoryIcon /> },
+        { text: 'Партии', path: '/batches', icon: <BatchesIcon /> },
+        { text: 'Склады', path: '/warehouses', icon: <WarehouseIcon /> },
+        { text: 'Поставщики', path: '/suppliers', icon: <SupplierIcon /> },
+      ]
+    },
+    {
+      text: 'Операции',
+      icon: <MovementsIcon />,
+      submenu: [
+        { text: 'Движения', path: '/movements', icon: <MovementsIcon /> },
+        { text: 'Инвентаризация', path: '/inventory', icon: <InventoryIcon2 /> },
+        { text: 'Списания', path: '/writeoffs', icon: <WriteOffIcon /> },
+      ]
+    },
+    { text: 'Отчёты', icon: <ReportsIcon />, path: '/reports' },
+    { text: 'Уведомления', icon: <NotificationsIcon />, path: '/notifications' },
   ];
 
-  const filteredMenuItems = menuItems.filter(item =>
-    item.roles.includes(user?.role || 'user')
-  );
+  const isActive = (path) => location.pathname === path;
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#fafafa' }}>
       <Toolbar sx={{ justifyContent: 'center', py: 2 }}>
-        <Typography variant="h6" color="primary" fontWeight="bold">
+        <Typography variant="h6" color="primary" fontWeight="700">
           WMS System
         </Typography>
       </Toolbar>
       <Divider />
 
-      {/* User Info */}
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
         <Avatar sx={{ bgcolor: 'primary.main' }}>
           {user?.username?.[0]?.toUpperCase() || 'U'}
@@ -66,57 +85,68 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
         <Box>
           <Typography variant="subtitle2">{user?.username}</Typography>
           <Typography variant="caption" color="textSecondary">
-            {user?.role === 'admin' ? 'Администратор' :
-             user?.role === 'manager' ? 'Менеджер' : 'Пользователь'}
+            {user?.role === 'admin' ? 'Администратор' : 'Пользователь'}
           </Typography>
         </Box>
       </Box>
       <Divider />
 
-      <List sx={{ flex: 1, pt: 2 }}>
-        {filteredMenuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              onClick={() => navigate(item.path)}
-              selected={location.pathname === item.path}
-              sx={{
-                mx: 1,
-                borderRadius: 2,
-                '&.Mui-selected': {
-                  bgcolor: 'primary.light',
-                  color: 'white',
-                  '& .MuiListItemIcon-root': {
-                    color: 'white',
-                  },
-                },
-                '&.Mui-selected:hover': {
-                  bgcolor: 'primary.main',
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
+      <List sx={{ flex: 1, pt: 2, px: 1 }}>
+        {menuItems.map((item) => {
+          if (item.submenu) {
+            return (
+              <React.Fragment key={item.text}>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => handleMenuClick(item.text)}>
+                    <ListItemIcon sx={{ minWidth: 40, color: 'primary.main' }}>
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText primary={item.text} />
+                    {openMenus[item.text] ? <ExpandLess /> : <ExpandMore />}
+                  </ListItemButton>
+                </ListItem>
+                <Collapse in={openMenus[item.text]} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {item.submenu.map((subItem) => (
+                      <ListItem key={subItem.text} disablePadding>
+                        <ListItemButton
+                          onClick={() => navigate(subItem.path)}
+                          selected={isActive(subItem.path)}
+                          sx={{ pl: 4 }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 40 }}>
+                            {subItem.icon}
+                          </ListItemIcon>
+                          <ListItemText primary={subItem.text} />
+                        </ListItemButton>
+                      </ListItem>
+                    ))}
+                  </List>
+                </Collapse>
+              </React.Fragment>
+            );
+          }
 
-      <Divider />
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="caption" color="textSecondary">
-          Версия 1.0.0
-        </Typography>
-      </Box>
+          return (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                onClick={() => navigate(item.path)}
+                selected={isActive(item.path)}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: 'primary.main' }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </List>
     </Box>
   );
 
   return (
-    <Box
-      component="nav"
-      sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-    >
+    <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
       <Drawer
         variant="temporary"
         open={mobileOpen}
@@ -124,7 +154,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          '& .MuiDrawer-paper': { width: drawerWidth },
         }}
       >
         {drawer}
@@ -133,7 +163,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
         variant="permanent"
         sx={{
           display: { xs: 'none', sm: 'block' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          '& .MuiDrawer-paper': { width: drawerWidth },
         }}
         open
       >
