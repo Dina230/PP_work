@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Grid,
   Card,
@@ -55,27 +55,27 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const { showNotification } = useNotification();
 
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      const [statsRes, movementsRes, categoriesRes] = await Promise.all([
-        api.get('/dashboard/stats/'),
-        api.get('/dashboard/movements/'),
-        api.get('/dashboard/categories/'),
-      ]);
-
-      setStats(statsRes.data);
-      setMovements(movementsRes.data);
-      setCategories(categoriesRes.data);
-    } catch (error) {
-      showNotification('Ошибка загрузки данных', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [showNotification]);
-
   useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [statsRes, movementsRes, categoriesRes] = await Promise.all([
+          api.get('/dashboard/stats/'),
+          api.get('/dashboard/movements/'),
+          api.get('/dashboard/categories/'),
+        ]);
+
+        setStats(statsRes.data);
+        setMovements(movementsRes.data);
+        setCategories(categoriesRes.data);
+      } catch (error) {
+        showNotification('Ошибка загрузки данных', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchDashboardData();
-  }, [fetchDashboardData]);
+  }, []); // ⚠️ ПУСТОЙ МАССИВ = выполняется только 1 раз при монтировании
 
   const COLORS = ['#1976d2', '#dc004e', '#ed6c02', '#2e7d32', '#9c27b0'];
 
