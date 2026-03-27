@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.warehouse',
     'apps.inventory',
-    'apps.core',
+    'apps.core.apps.CoreConfig',
 ]
 
 MIDDLEWARE = [
@@ -37,6 +37,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.core.middleware.AuditContextMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

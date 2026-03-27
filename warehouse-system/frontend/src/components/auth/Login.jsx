@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Container,
@@ -10,12 +10,15 @@ import {
   Box,
   Alert,
   CircularProgress,
+  Link,
 } from '@mui/material';
 import { Inventory as InventoryIcon } from '@mui/icons-material';
 import { login } from '../../store/slices/authSlice';
+import { getHomePath } from '../../utils/rolePaths';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({
@@ -27,7 +30,8 @@ const Login = () => {
     e.preventDefault();
     const result = await dispatch(login(formData));
     if (!result.error) {
-      navigate('/dashboard');
+      const u = result.payload?.user;
+      navigate(getHomePath(u?.role_code, u?.is_superuser));
     }
   };
 
@@ -42,6 +46,11 @@ const Login = () => {
             Складской учёт
           </Typography>
 
+          {location.state?.registered && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Регистрация успешна. Войдите под новым логином.
+            </Alert>
+          )}
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
           <form onSubmit={handleSubmit}>
@@ -76,7 +85,10 @@ const Login = () => {
           </form>
 
           <Typography variant="body2" align="center" sx={{ mt: 2 }}>
-            admin / admin123
+            Нет аккаунта?{' '}
+            <Link component={RouterLink} to="/register">
+              Регистрация
+            </Link>
           </Typography>
         </Paper>
       </Box>

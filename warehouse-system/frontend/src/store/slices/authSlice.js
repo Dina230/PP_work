@@ -14,7 +14,13 @@ export const login = createAsyncThunk(
       const userResponse = await api.get('/users/me/');
       return { access, refresh, user: userResponse.data };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.detail || 'Ошибка входа');
+      const data = error.response?.data;
+      const message =
+        data?.detail ||
+        data?.username?.[0] ||
+        data?.non_field_errors?.[0] ||
+        'Ошибка входа: проверьте логин и пароль';
+      return rejectWithValue(message);
     }
   }
 );

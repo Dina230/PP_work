@@ -77,22 +77,25 @@ const Profile = () => {
     }
   };
 
-  const getRoleName = (role) => {
+  const roleCode = user?.role_code;
+
+  const getRoleName = (code) => {
     const roles = {
       admin: 'Администратор',
       manager: 'Менеджер',
       user: 'Пользователь',
     };
-    return roles[role] || role;
+    if (code && roles[code]) return roles[code];
+    return user?.role_name || code || '—';
   };
 
-  const getRoleColor = (role) => {
+  const getRoleColor = (code) => {
     const colors = {
       admin: 'error',
       manager: 'warning',
       user: 'info',
     };
-    return colors[role] || 'default';
+    return colors[code] || 'default';
   };
 
   const getInitials = () => {
@@ -138,8 +141,8 @@ const Profile = () => {
                 </Typography>
 
                 <Chip
-                  label={getRoleName(user.role)}
-                  color={getRoleColor(user.role)}
+                  label={getRoleName(roleCode)}
+                  color={getRoleColor(roleCode)}
                   sx={{ mb: 2 }}
                 />
 
@@ -173,7 +176,7 @@ const Profile = () => {
                     </Typography>
                   </Box>
                   <Typography variant="body1" sx={{ ml: 4, mb: 2 }}>
-                    {getRoleName(user.role)}
+                    {getRoleName(roleCode)}
                   </Typography>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>

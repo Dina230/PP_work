@@ -16,6 +16,7 @@ import {
   Collapse,
 } from '@mui/material';
 import {
+  Home as HomeIcon,
   Dashboard as DashboardIcon,
   Inventory as InventoryIcon,
   LocalShipping as BatchesIcon,
@@ -24,12 +25,15 @@ import {
   Delete as WriteOffIcon,
   Assessment as ReportsIcon,
   Notifications as NotificationsIcon,
+  History as AuditIcon,
   Category as CategoryIcon,
   Warehouse as WarehouseIcon,
   Business as SupplierIcon,
+  People as PeopleIcon,
   ExpandLess,
   ExpandMore,
 } from '@mui/icons-material';
+import { getHomePath } from '../../utils/rolePaths';
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
   const navigate = useNavigate();
@@ -41,33 +45,57 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
   };
 
-  const menuItems = [
-    { text: 'Дашборд', icon: <DashboardIcon />, path: '/dashboard' },
-    {
-      text: 'Склад',
-      icon: <InventoryIcon />,
-      submenu: [
-        { text: 'Товары', path: '/products', icon: <InventoryIcon /> },
-        { text: 'Категории', path: '/categories', icon: <CategoryIcon /> },
-        { text: 'Партии', path: '/batches', icon: <BatchesIcon /> },
-        { text: 'Склады', path: '/warehouses', icon: <WarehouseIcon /> },
-        { text: 'Поставщики', path: '/suppliers', icon: <SupplierIcon /> },
-      ]
-    },
-    {
-      text: 'Операции',
-      icon: <MovementsIcon />,
-      submenu: [
-        { text: 'Движения', path: '/movements', icon: <MovementsIcon /> },
-        { text: 'Инвентаризация', path: '/inventory', icon: <InventoryIcon2 /> },
-        { text: 'Списания', path: '/writeoffs', icon: <WriteOffIcon /> },
-      ]
-    },
-    { text: 'Отчёты', icon: <ReportsIcon />, path: '/reports' },
-    { text: 'Уведомления', icon: <NotificationsIcon />, path: '/notifications' },
+  const roleCode = user?.role_code;
+  const isAdmin = roleCode === 'admin' || user?.is_superuser;
+  const homePath = getHomePath(roleCode, user?.is_superuser);
+
+  const warehouseSubmenu = [
+    { text: 'Товары', path: '/products', icon: <InventoryIcon /> },
+    { text: 'Категории', path: '/categories', icon: <CategoryIcon /> },
+    { text: 'Партии', path: '/batches', icon: <BatchesIcon /> },
+    { text: 'Склады', path: '/warehouses', icon: <WarehouseIcon /> },
+    { text: 'Поставщики', path: '/suppliers', icon: <SupplierIcon /> },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const operationsSubmenu = [
+    { text: 'Движения', path: '/movements', icon: <MovementsIcon /> },
+    { text: 'Инвентаризация', path: '/inventory', icon: <InventoryIcon2 /> },
+    { text: 'Списания', path: '/writeoffs', icon: <WriteOffIcon /> },
+  ];
+
+  const isSimpleUser = roleCode === 'user' && !user?.is_superuser;
+
+  const menuItems = isSimpleUser
+    ? [
+        { text: 'Главная', icon: <HomeIcon />, path: homePath },
+        { text: 'Товары', icon: <InventoryIcon />, path: '/products' },
+        { text: 'Уведомления', icon: <NotificationsIcon />, path: '/notifications' },
+      ]
+    : [
+        { text: 'Главная', icon: <HomeIcon />, path: homePath },
+        { text: 'Дашборд', icon: <DashboardIcon />, path: '/dashboard' },
+        {
+          text: 'Склад',
+          icon: <InventoryIcon />,
+          submenu: warehouseSubmenu,
+        },
+        {
+          text: 'Операции',
+          icon: <MovementsIcon />,
+          submenu: operationsSubmenu,
+        },
+        { text: 'Отчёты', icon: <ReportsIcon />, path: '/reports' },
+        { text: 'Уведомления', icon: <NotificationsIcon />, path: '/notifications' },
+        ...(isAdmin
+          ? [
+              { text: 'Пользователи', icon: <PeopleIcon />, path: '/admin/users' },
+              { text: 'Аудит', icon: <AuditIcon />, path: '/audit-logs' },
+            ]
+          : []),
+      ];
+
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#fafafa' }}>
@@ -85,7 +113,13 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
         <Box>
           <Typography variant="subtitle2">{user?.username}</Typography>
           <Typography variant="caption" color="textSecondary">
-            {user?.role === 'admin' ? 'Администратор' : 'Пользователь'}
+            {roleCode === 'admin'
+              ? 'Администратор'
+              : roleCode === 'manager'
+                ? 'Менеджер'
+                : roleCode === 'user'
+                  ? 'Пользователь'
+                  : user?.role_name || '—'}
           </Typography>
         </Box>
       </Box>

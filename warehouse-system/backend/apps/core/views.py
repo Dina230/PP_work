@@ -17,15 +17,27 @@ from apps.warehouse.models import (
     Warehouse,
 )
 from apps.inventory.models import Inventory
+from apps.accounts.permissions import IsAdminRoleOrSuperuser
 
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AuditLog.objects.all()
     serializer_class = AuditLogSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminRoleOrSuperuser]
 
     def get_queryset(self):
-        return super().get_queryset().select_related('user', 'content_type')
+        queryset = super().get_queryset().select_related('user', 'content_type')
+        action_param = self.request.query_params.get('action')
+        model_param = self.request.query_params.get('model')
+        user_param = self.request.query_params.get('user')
+
+        if action_param:
+            queryset = queryset.filter(action=action_param)
+        if model_param:
+            queryset = queryset.filter(content_type__model=model_param)
+        if user_param:
+            queryset = queryset.filter(user_id=user_param)
+        return queryset
 
 
 class NotificationViewSet(viewsets.ModelViewSet):

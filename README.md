@@ -41,12 +41,12 @@
 ### Через Docker
 
 ```bash
-# Клонировать репозиторий
-git clone https://github.com/yourusername/warehouse-system.git
-cd warehouse-system
 
 # Создать файл .env из примера
 cp .env.example .env
 
 # Запустить контейнеры
 docker-compose up --build
+
+
+добавление аудита

@@ -6,7 +6,12 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import Login from './components/auth/Login';
+import Register from './components/auth/Register';
 import Layout from './components/common/Layout';
+import RoleRoute from './components/common/RoleRoute';
+import AdminHome from './components/roles/AdminHome';
+import ManagerHome from './components/roles/ManagerHome';
+import UserHome from './components/roles/UserHome';
 import Dashboard from './components/dashboard/Dashboard';
 import ProductsTable from './components/products/ProductsTable';
 import ProductForm from './components/products/ProductForm';
@@ -30,6 +35,8 @@ import InventoryDetails from './components/inventory/InventoryDetails';
 import Profile from './components/auth/Profile';
 import Reports from './components/reports/Reports';
 import Notifications from './components/notifications/Notifications';
+import AuditLogs from './components/audit/AuditLogs';
+import AdminUsers from './components/admin/AdminUsers';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('access');
@@ -49,8 +56,33 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
             <Route index element={<Navigate to="/dashboard" />} />
+            <Route
+              path="admin/home"
+              element={
+                <RoleRoute allowedRoles={['admin']}>
+                  <AdminHome />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="manager/home"
+              element={
+                <RoleRoute allowedRoles={['manager']}>
+                  <ManagerHome />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="user/home"
+              element={
+                <RoleRoute allowedRoles={['user']}>
+                  <UserHome />
+                </RoleRoute>
+              }
+            />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="products" element={<ProductsTable />} />
             <Route path="products/new" element={<ProductForm />} />
@@ -76,6 +108,8 @@ function App() {
             <Route path="inventory/:id" element={<InventoryDetails />} />
             <Route path="reports" element={<Reports />} />
             <Route path="notifications" element={<Notifications />} />
+            <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="admin/users" element={<AdminUsers />} />
             <Route path="profile" element={<Profile />} />
           </Route>
         </Routes>
